@@ -1,4 +1,4 @@
-import { X, ShieldAlert, TrendingUp, Users, Activity, Database } from 'lucide-react';
+import { X, ShieldAlert, TrendingUp, Users, Activity, Database, Map as MapIcon } from 'lucide-react';
 import type { GridRegionCode } from '../../types/grid';
 import { GRID_REGIONS_CONFIG } from '../../constants/gridData';
 import { StatusIndicator } from '../common/StatusIndicator';
@@ -6,6 +6,7 @@ import { formatNumber } from '../../utils/formatIndian';
 import { TRAINING_STATUS, formatEpsilon } from '../../data/projectFacts';
 import experimentDataRaw from '../../data/federatedExperimentResults.json';
 import type { FederatedExperimentPayload } from '../../types/fl';
+import { isStateSupported } from '../../constants/supportedStates';
 
 const experimentData = experimentDataRaw as unknown as FederatedExperimentPayload;
 
@@ -19,12 +20,16 @@ interface StateDetailCardProps {
   state: SelectedStateData | null;
   onClose: () => void;
   onNavigateToAnalysis?: (stateName: string) => void;
+  onZoomToStateView?: (stateName: string) => void;
+  isStateView?: boolean;
 }
 
 export const StateDetailCard = ({
   state,
   onClose,
   onNavigateToAnalysis,
+  onZoomToStateView,
+  isStateView = false,
 }: StateDetailCardProps) => {
   if (!state) return null;
 
@@ -237,7 +242,23 @@ export const StateDetailCard = ({
       </div>
 
       {/* Footer Actions */}
-      <div className="flex-shrink-0 p-4 border-t border-[#14263D] bg-[#0A1422]/50">
+      <div className="flex-shrink-0 p-4 border-t border-[#14263D] bg-[#0A1422]/50 space-y-2">
+        {isStateSupported(state.name) ? (
+          !isStateView && onZoomToStateView && (
+            <button
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#B8FF65]/15 hover:bg-[#B8FF65]/25 border border-[#B8FF65]/40 text-sm font-semibold text-[#B8FF65] transition-all shadow-sm"
+              onClick={() => onZoomToStateView(state.name)}
+            >
+              <MapIcon className="w-4 h-4" />
+              <span>Explore District Heatmap</span>
+            </button>
+          )
+        ) : (
+          <div className="p-2.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] font-mono text-amber-300/90 leading-tight">
+            District boundary heatmap is configured for the 10 Priority States. (Selected: {state.name})
+          </div>
+        )}
+
         <button
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#38BDF8]/15 hover:bg-[#38BDF8]/25 border border-[#38BDF8]/40 text-sm font-medium text-[#38BDF8] transition-all"
           onClick={() => {
@@ -247,7 +268,7 @@ export const StateDetailCard = ({
           }}
         >
           <TrendingUp className="w-4 h-4" />
-          <span>View Detailed Analytics</span>
+          <span>View Deep-Dive Analysis</span>
         </button>
       </div>
     </div>

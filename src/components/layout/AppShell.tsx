@@ -41,13 +41,13 @@ export const AppShell: React.FC<AppShellProps> = ({
       case 'india-grid-explorer':
         return <IndiaGridExplorer onNavigateToStateAnalysis={handleNavigateToStateAnalysis} />;
       case 'anomaly-intelligence':
-        return <MeterIntelligencePage />;
+        return <MeterIntelligencePage onNavigateToInvestigations={() => onSelectItem('investigations')} />;
       case 'federated-learning':
         return <FederatedLearningView />;
       case 'experiments':
         return <ExperimentsView />;
       case 'state-analysis':
-        return <StateDeepDive preselectedState={appSelectedState} />;
+        return <StateDeepDive preselectedState={appSelectedState} onNavigateToInvestigations={() => onSelectItem('investigations')} />;
       case 'trust-model-health':
         return <DriftHealthView />;
       case 'investigations':
@@ -62,7 +62,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       case 'grid-regions':
         return <IndiaGridExplorer onNavigateToStateAnalysis={handleNavigateToStateAnalysis} />;
       case 'meter-intelligence':
-        return <MeterIntelligencePage />;
+        return <MeterIntelligencePage onNavigateToInvestigations={() => onSelectItem('investigations')} />;
       case 'fl-lab':
         return <FederatedLearningView />;
       case 'drift-health':
