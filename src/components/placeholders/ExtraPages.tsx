@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import streamData from '../../data/streamReplay.json';
 
 interface Rec {
@@ -27,101 +27,13 @@ const Header: React.FC<{ title: string; sub: string }> = ({ title, sub }) => (
   </div>
 );
 
+import { AnomalyResolutionCenter } from '../resolution/AnomalyResolutionCenter';
+
 /* ---------------- Investigations ---------------- */
-const STATUSES = ['Open', 'Under review', 'Escalated', 'Closed - false alarm'];
-
 export const InvestigationsPage: React.FC = () => {
-  const cases = useMemo(
-    () => [...RECORDS].sort((a, b) => b.score - a.score).slice(0, 25),
-    []
-  );
-  const [status, setStatus] = useState<Record<string, string>>({});
-  const [notes, setNotes] = useState<Record<string, string>>({});
-
-  const report = () =>
-    cases.map((c) => ({
-      case_id: `CASE-${c.id}`,
-      region: c.region,
-      model_score: Number(c.score.toFixed(4)),
-      ground_truth_label: c.label,
-      status: status[String(c.id)] ?? 'Open',
-      notes: notes[String(c.id)] ?? '',
-    }));
-
-  const exportJson = () => {
-    const blob = new Blob(
-      [JSON.stringify({ generated: new Date().toISOString(), note: 'Simulated data', cases: report() }, null, 2)],
-      { type: 'application/json' }
-    );
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'urjasetu_investigations.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  return (
-    <div className={wrap}>
-      <Header
-        title="Investigations & Reports"
-        sub="Top 25 highest-scoring meters from the held-out stream. Set a status, add notes, export a report."
-      />
-      <div className="mb-4 flex gap-3">
-        <button onClick={exportJson} className="rounded-lg bg-[#38BDF8] px-4 py-2 font-semibold text-black">
-          Export JSON
-        </button>
-        <button onClick={() => window.print()} className="rounded-lg border border-slate-600 px-4 py-2">
-          Print summary
-        </button>
-      </div>
-      <div className={card}>
-        <table className="w-full text-left text-sm">
-          <thead className="text-xs uppercase text-slate-400">
-            <tr>
-              <th className="p-2">Case</th>
-              <th className="p-2">Region</th>
-              <th className="p-2">Score</th>
-              <th className="p-2">Status</th>
-              <th className="p-2">Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cases.map((c) => {
-              const k = String(c.id);
-              return (
-                <tr key={k} className="border-t border-slate-800">
-                  <td className={`p-2 ${mono}`}>CASE-{k}</td>
-                  <td className="p-2">{c.region}</td>
-                  <td className={`p-2 ${mono} text-[#B8FF65]`}>{(c.score * 100).toFixed(1)}%</td>
-                  <td className="p-2">
-                    <select
-                      value={status[k] ?? 'Open'}
-                      onChange={(e) => setStatus({ ...status, [k]: e.target.value })}
-                      className="rounded border border-slate-600 bg-[#050B14] px-2 py-1"
-                    >
-                      {STATUSES.map((s) => (
-                        <option key={s}>{s}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="p-2">
-                    <input
-                      value={notes[k] ?? ''}
-                      onChange={(e) => setNotes({ ...notes, [k]: e.target.value })}
-                      placeholder="Add note..."
-                      className="w-full rounded border border-slate-600 bg-[#050B14] px-2 py-1"
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  return <AnomalyResolutionCenter />;
 };
+
 
 /* ---------------- Data Sources ---------------- */
 const PROFILES: Record<string, string> = {

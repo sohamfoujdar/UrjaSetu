@@ -1,11 +1,13 @@
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { Play, Pause, BarChart3 } from 'lucide-react';
+import { Play, Pause, BarChart3, FolderOpen } from 'lucide-react';
 import { METER_FIXTURE } from '../../data/meterFixture';
 import {
   detectAnomalies,
   exportAnomalyResults,
 } from '../../services/anomalyDetection';
+import { caseStore } from '../../services/caseStore';
+import { AnomalyResolutionDrawer } from '../resolution/AnomalyResolutionDrawer';
 import streamReplayData from '../../data/streamReplay.json';
 
 interface StreamRecord {
@@ -88,8 +90,14 @@ class MeterIntelligenceErrorBoundary extends React.Component<
   }
 }
 
-const MeterIntelligencePageContent: React.FC = () => {
+const MeterIntelligencePageContent: React.FC<{ onNavigateToInvestigations?: () => void }> = ({ onNavigateToInvestigations }) => {
   const [search, setSearch] = useState('');
+  const [openCaseId, setOpenCaseId] = useState<string | null>(null);
+
+  const openCaseForRecord = (record: { id: number; region: string; score: number; label: number; hourly_load: number[] }) => {
+    const c = caseStore.openCase(record);
+    setOpenCaseId(c.caseId);
+  };
   const [categoryFilter, setCategoryFilter] = useState('all');
 
   // Shuffle stream records once with seeded shuffle (seed=42)
@@ -276,6 +284,7 @@ const MeterIntelligencePageContent: React.FC = () => {
   }
 
   return (
+    <>
     <div className="h-full overflow-y-auto bg-[#050B14] p-5 text-slate-100 md:p-8">
       <div className="mx-auto max-w-[1500px] space-y-6">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -445,13 +454,15 @@ const MeterIntelligencePageContent: React.FC = () => {
                     {feedRecords.map((record) => {
                       const badge = getRiskBadge(record.score);
                       return (
-                        <button
+                        <div
                           key={record.id}
-                          onClick={() => setSelectedRecord(record)}
-                          className="w-full p-3 hover:bg-[#0E2036] transition-colors text-left"
+                          className="w-full p-3 hover:bg-[#0E2036] transition-colors"
                         >
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3 flex-1">
+                            <button
+                              onClick={() => setSelectedRecord(record)}
+                              className="flex items-center gap-3 flex-1 text-left"
+                            >
                               <span className="font-mono text-xs text-slate-400 w-16">
                                 #{record.id}
                               </span>
@@ -461,12 +472,21 @@ const MeterIntelligencePageContent: React.FC = () => {
                               <span className="font-mono text-sm font-bold text-white">
                                 {(record.score * 100).toFixed(1)}%
                               </span>
+                            </button>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-1 rounded text-xs font-medium border ${badge.color}`}>
+                                {badge.label}
+                              </span>
+                              <button
+                                onClick={() => openCaseForRecord(record)}
+                                title="Open case in Resolution Center"
+                                className="p-1 rounded text-slate-500 hover:text-[#38BDF8] hover:bg-[#38BDF8]/10 transition-colors"
+                              >
+                                <FolderOpen className="w-3.5 h-3.5" />
+                              </button>
                             </div>
-                            <span className={`px-2 py-1 rounded text-xs font-medium border ${badge.color}`}>
-                              {badge.label}
-                            </span>
                           </div>
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -629,6 +649,7 @@ const MeterIntelligencePageContent: React.FC = () => {
                   <th className="px-3 py-3">Anomaly score</th>
                   <th className="px-3 py-3">Category</th>
                   <th className="px-3 py-3">Evidence</th>
+                  <th className="px-3 py-3">Case</th>
                 </tr>
               </thead>
 
@@ -706,6 +727,26 @@ const MeterIntelligencePageContent: React.FC = () => {
                         </p>
                       )}
                     </td>
+                    <td className="px-3 py-4">
+                      <button
+                        onClick={() => {
+                          // Build a synthetic stream-compatible record from the AnomalyResult
+                          const syntheticRecord = {
+                            id: index + 10000, // offset to avoid collision with stream IDs
+                            region: item.region.slice(0, 2).toUpperCase(),
+                            score: item.anomalyScore ?? 0,
+                            label: (item.category === 'high-consumption' || item.category === 'low-consumption') ? 1 : 0,
+                            hourly_load: [],
+                          };
+                          const c = caseStore.openCase(syntheticRecord);
+                          setOpenCaseId(c.caseId);
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[#38BDF8] border border-[#38BDF8]/30 bg-[#38BDF8]/8 hover:bg-[#38BDF8]/20 transition-colors whitespace-nowrap"
+                      >
+                        <FolderOpen className="w-3 h-3" />
+                        Open Case
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -725,12 +766,18 @@ const MeterIntelligencePageContent: React.FC = () => {
         </section>
       </div>
     </div>
+    <AnomalyResolutionDrawer
+      caseId={openCaseId}
+      onClose={() => setOpenCaseId(null)}
+      onNavigateToInvestigations={onNavigateToInvestigations}
+    />
+    </>
   );
 };
 
-export const MeterIntelligencePage: React.FC = () => (
+export const MeterIntelligencePage: React.FC<{ onNavigateToInvestigations?: () => void }> = ({ onNavigateToInvestigations }) => (
   <MeterIntelligenceErrorBoundary>
-    <MeterIntelligencePageContent />
+    <MeterIntelligencePageContent onNavigateToInvestigations={onNavigateToInvestigations} />
   </MeterIntelligenceErrorBoundary>
 );
 

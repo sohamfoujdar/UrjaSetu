@@ -57,9 +57,11 @@ function getEdgeKey(p1: Coordinate2D, p2: Coordinate2D): string {
 
 interface IndiaGrid3DProps {
   onStateSelect?: (state: SelectedStateData | null) => void;
+  showFLOverlay?: boolean;
+  onToggleFLOverlay?: () => void;
 }
 
-export const IndiaGrid3D = ({ onStateSelect }: IndiaGrid3DProps) => {
+export const IndiaGrid3D = ({ onStateSelect, showFLOverlay = false, onToggleFLOverlay }: IndiaGrid3DProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -69,6 +71,10 @@ export const IndiaGrid3D = ({ onStateSelect }: IndiaGrid3DProps) => {
   const [webGLError, setWebGLError] = useState<string | null>(null);
   const [is3D, setIs3D] = useState<boolean>(true);
   const [showCorridors, setShowCorridors] = useState<boolean>(true);
+  const [showNodes, setShowNodes] = useState<boolean>(true);
+  const [showFLLinks, setShowFLLinks] = useState<boolean>(true);
+  const [showHeatmap, setShowHeatmap] = useState<boolean>(true);
+  const [showLabels, setShowLabels] = useState<boolean>(true);
   const [regionFilter, setRegionFilter] = useState<GridRegionCode | 'ALL'>('ALL');
   const [hoveredEntity, setHoveredEntity] = useState<HoveredEntity | null>(null);
   const [selectedNode, setSelectedNode] = useState<GridNode | null>(null);
@@ -950,6 +956,10 @@ export const IndiaGrid3D = ({ onStateSelect }: IndiaGrid3DProps) => {
       const elapsedTime = (performance.now() - startTime) / 1000;
       controls.update();
 
+      // Toggle layer group visibility each frame (cheap .visible flag)
+      if (nodesGroupRef.current) nodesGroupRef.current.visible = showNodes;
+      if (corridorGroupRef.current) corridorGroupRef.current.visible = showCorridors || showFLLinks;
+
       // Animate pulsing radar rings on regional nodes
       if (!prefersReducedMotion) {
         const pulseScale = 1.0 + 0.28 * Math.sin(elapsedTime * 2.8);
@@ -959,9 +969,12 @@ export const IndiaGrid3D = ({ onStateSelect }: IndiaGrid3DProps) => {
 
         // Animate telemetry flow particles along transmission corridors
         flowParticlesRef.current.forEach((item) => {
-          const t = (elapsedTime * item.speed + item.offset) % 1.0;
-          const pos = item.curve.getPoint(t);
-          item.mesh.position.copy(pos);
+          item.mesh.visible = showFLLinks;
+          if (showFLLinks) {
+            const t = (elapsedTime * item.speed + item.offset) % 1.0;
+            const pos = item.curve.getPoint(t);
+            item.mesh.position.copy(pos);
+          }
         });
       }
 
@@ -1216,6 +1229,16 @@ export const IndiaGrid3D = ({ onStateSelect }: IndiaGrid3DProps) => {
           onToggle3D={handleToggle3D}
           showCorridors={showCorridors}
           onToggleCorridors={() => setShowCorridors(!showCorridors)}
+          showNodes={showNodes}
+          onToggleNodes={() => setShowNodes(!showNodes)}
+          showFLLinks={showFLLinks}
+          onToggleFLLinks={() => setShowFLLinks(!showFLLinks)}
+          showHeatmap={showHeatmap}
+          onToggleHeatmap={() => setShowHeatmap(!showHeatmap)}
+          showLabels={showLabels}
+          onToggleLabels={() => setShowLabels(!showLabels)}
+          showFLOverlay={showFLOverlay}
+          onToggleFLOverlay={onToggleFLOverlay}
           selectedRegionFilter={regionFilter}
           onSelectRegionFilter={setRegionFilter}
           onResetView={handleResetCamera}
